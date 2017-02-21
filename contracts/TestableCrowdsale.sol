@@ -11,7 +11,7 @@ contract token {
 **/
 contract Crowdsale {
     /* if successful, the funds will be retrievable by this address */
-	address public beneficiary = 0x003230bbe64eccd66f62913679c8966cf9f41166;
+	address public beneficiary = 0;
 	/* if the funding goal is not reached, investors may withdraw their funds */
 	uint public fundingGoal = 50000000;
 	/* the maximum amount of tokens to be sold */
@@ -24,6 +24,8 @@ contract Crowdsale {
 	uint public tokensSold;
 	/* there are different prices in different time intervals */
 	uint[4] public deadlines = [1488297600, 1488902400, 1489507200,1490112000];
+
+	/* Prices before a deadline is reached */
 	uint[4] public prices = [833333333333333, 909090909090909,952380952380952, 1000000000000000];
 	/* the address of the token contract */
 	token public tokenReward;
@@ -35,11 +37,28 @@ contract Crowdsale {
 	event GoalReached(address beneficiary, uint amountRaised);
 	event FundTransfer(address backer, uint amount, bool isContribution);
 
-
+    /* Time override */
+	uint _current;
 
     /*  initialization, set the token address */
-    function Crowdsale( ) {
-        tokenReward = token(0xbe87e87965b96d8174eae4e3724a6d7417c488b0);
+    function Crowdsale(address _beneficiary) {
+        beneficiary = _beneficiary;
+    }
+
+    /* Build circular references between contracts. */
+    function setToken(address _token) public {
+        if(msg.sender != beneficiary) throw;
+        if(address(tokenReward) != 0) throw; // No double set
+        tokenReward = token(_token);
+    }
+
+    /** Override current() for testing */
+    function current() public returns (uint) {
+        return _current;
+    }
+
+    function setCurrent(uint __current) {
+        _current = __current;
     }
 
     /* whenever anyone sends funds to a contract, the corresponding amount of tokens is transfered to the sender
@@ -52,24 +71,25 @@ contract Crowdsale {
     to be called in case the msg.sender is not the one to receive the tokens.*/
     function invest(address receiver) payable{
     	uint amount = msg.value;
-	uint numTokens = amount / getPrice();
-	if (crowdsaleClosed||now<start||tokensSold+numTokens>maxGoal) throw;
-	balanceOf[receiver] += amount;
-	amountRaised += amount;
-	tokensSold+=numTokens;
-	if(!tokenReward.transferFrom(beneficiary, receiver, numTokens)) throw;
+        uint numTokens = amount / getPrice();
+
+        if (crowdsaleClosed||current()<start||tokensSold+numTokens>maxGoal) throw;
+        balanceOf[receiver] += amount;
+        amountRaised += amount;
+        tokensSold+=numTokens;
+        if(!tokenReward.transferFrom(beneficiary, receiver, numTokens)) throw;
         FundTransfer(receiver, amount, true);
     }
 
     /* looks up the current token price */
     function getPrice() constant returns (uint256 price){
         for(var i = 0; i < deadlines.length; i++)
-            if(now<deadlines[i])
+            if(current()<deadlines[i])
                 return prices[i];
         return prices[prices.length-1];//should never be returned, but to be sure to not divide by 0
     }
 
-    modifier afterDeadline() { if (now >= deadlines[deadlines.length-1]) _; }
+    modifier afterDeadline() { if (current() >= deadlines[deadlines.length-1]) _; }
 
     /* checks if the goal or time limit has been reached and ends the campaign */
     function checkGoalReached() afterDeadline {
