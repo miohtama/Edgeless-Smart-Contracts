@@ -12,7 +12,7 @@ def test_initialized(crowdsale: Contract, token: Contract, beneficiary: str):
     assert token.call().balanceOf(beneficiary) == 500000000
     assert token.call().totalSupply() == 500000000
     assert token.call().owner() == beneficiary
-    assert token.call().allowance(beneficiary, crowdsale.address) == 500000000
+    assert token.call().allowance(beneficiary, crowdsale.address) == 440000000
     assert token.call().owner() == crowdsale.call().beneficiary()
 
 
@@ -112,19 +112,13 @@ def test_buy_more_tokens(open_crowdsale: Contract, token: Contract, customer: st
 def test_buy_rounded_to_zero(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
     """We buy very small amount that is rounded to zero."""
 
-    web3.eth.sendTransaction({
-        "from": customer,
-        "to": open_crowdsale.address,
-        "value": 1,  # 1 wei
-        "gas": 250000,
-    })
-
-    events = token.pastEvents("Transfer").get()
-    assert len(events) == 1
-    e = events[0]
-    assert e["args"]["to"] == customer
-    assert e["args"]["from"] == beneficiary
-    assert e["args"]["value"] == 0
+    with pytest.raises(TransactionFailed):
+        web3.eth.sendTransaction({
+            "from": customer,
+            "to": open_crowdsale.address,
+            "value": 1,  # 1 wei
+            "gas": 250000,
+        })
 
 
 def test_buy_too_many_tokens(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):

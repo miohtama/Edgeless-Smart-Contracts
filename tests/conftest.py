@@ -24,7 +24,8 @@ def token(chain, crowdsale, beneficiary) -> Contract:
     assert crowdsale.call().tokenReward() != '0x0000000000000000000000000000000000000000'
 
     # Allow crowdsale contract to issue out tokens
-    contract.transact({"from": beneficiary}).approve(crowdsale.address, 500000000)
+    # All (500.000.000) tokens initially belong to the edgeless team. Before ICO starts, the Edgeless Team approves the ICO contract to spend up to 440.000.000 tokens. Remaining tokens get burned as soon as the ICO is closed. There will be 60.000.000 tokens left for the edgeless team to hold and for the bounty program to be paid (10.000.000).
+    contract.transact({"from": beneficiary}).approve(crowdsale.address, 440000000)
 
     return contract
 

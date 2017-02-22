@@ -7,8 +7,6 @@
 
 pragma solidity ^0.4.6;
 
-import "./TestableNow.sol";
-
 contract token {
 	function transferFrom(address sender, address receiver, uint amount) returns(bool success){}
 	function burn() {}
@@ -40,7 +38,7 @@ contract SafeMath {
 }
 
 
-contract Crowdsale is SafeMath, TestableNow {
+contract Crowdsale is SafeMath {
     /* tokens will be transfered from this address */
 	address public beneficiary = 0;
 	/* if the funding goal is not reached, investors may withdraw their funds */
@@ -61,26 +59,20 @@ contract Crowdsale is SafeMath, TestableNow {
 	/* the balances (in ETH) of all investors */
 	mapping(address => uint256) public balanceOf;
 	/* indicated if the funding goal has been reached. */
-	bool public fundingGoalReached = false;
+	bool fundingGoalReached = false;
 	/* indicates if the crowdsale has been closed already */
-	bool public crowdsaleClosed = false;
+	bool crowdsaleClosed = false;
 	/* the multisignature wallet on which the funds will be stored */
-	address msWallet = 0;
+	address msWallet = 0x91efffb9c6cd3a66474688d0a48aa6ecfe515aa5;
 	/* notifying transfers and the success of the crowdsale*/
 	event GoalReached(address beneficiary, uint amountRaised);
 	event FundTransfer(address backer, uint amount, bool isContribution, uint amountRaised);
 
-    /*  initialization, set the token address */
-    function Crowdsale(address _beneficiary, address _msWallet) {
-        beneficiary = _beneficiary;
-        msWallet = _msWallet;
-    }
 
-    /* Build circular references between contracts. Only in test version. */
-    function setToken(address _token) public {
-        if(msg.sender != beneficiary) throw;
-        if(address(tokenReward) != 0) throw; // No double set
-        tokenReward = token(_token);
+
+    /*  initialization, set the token address */
+    function Crowdsale( ) {
+        tokenReward = token(0x5bdf79f1e7431edb75537d23d3b404ef86f44316);
     }
 
     /* invest by sending ether to the contract. */
@@ -99,7 +91,7 @@ contract Crowdsale is SafeMath, TestableNow {
     	uint price = getPrice();
     	if(price > amount) throw;
 		uint numTokens = amount / price;
-		if (crowdsaleClosed||current()<start||safeAdd(tokensSold,numTokens)>maxGoal) throw;
+		if (crowdsaleClosed||now<start||safeAdd(tokensSold,numTokens)>maxGoal) throw;
 		if(!msWallet.send(amount)) throw;
 		balanceOf[receiver] = safeAdd(balanceOf[receiver],amount);
 		amountRaised = safeAdd(amountRaised, amount);
@@ -111,12 +103,12 @@ contract Crowdsale is SafeMath, TestableNow {
     /* looks up the current token price */
     function getPrice() constant returns (uint256 price){
         for(var i = 0; i < deadlines.length; i++)
-            if(current()<deadlines[i])
+            if(now<deadlines[i])
                 return prices[i];
         return prices[prices.length-1];//should never be returned, but to be sure to not divide by 0
     }
 
-    modifier afterDeadline() { if (current() >= deadlines[deadlines.length-1]) _; }
+    modifier afterDeadline() { if (now >= deadlines[deadlines.length-1]) _; }
 
     /* checks if the goal or time limit has been reached and ends the campaign */
     function checkGoalReached() afterDeadline {
