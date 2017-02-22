@@ -8,89 +8,6 @@ from web3.contract import Contract
 from web3.utils.currency import to_wei
 
 
-@pytest.fixture
-def crowdsale(chain, beneficiary, multisig) -> Contract:
-    """Create crowdsale contract."""
-    args = [beneficiary, multisig]
-    contract = chain.get_contract('Crowdsale', deploy_args=args)
-    return contract
-
-
-@pytest.fixture
-def token(chain, crowdsale, beneficiary) -> Contract:
-    """Create ICO contract."""
-    #owner = crowdsale.address
-    args = [beneficiary]  # Owner set
-    contract = chain.get_contract('EdgelessToken', deploy_args=args)
-    assert crowdsale.call().tokenReward() == '0x0000000000000000000000000000000000000000'
-    crowdsale.transact({"from": beneficiary}).setToken(contract.address)
-    assert crowdsale.call().tokenReward() != '0x0000000000000000000000000000000000000000'
-
-    # Allow crowdsale contract to issue out tokens
-    contract.transact({"from": beneficiary}).approve(crowdsale.address, 500000000)
-
-    return contract
-
-
-@pytest.fixture
-def customer(accounts) -> str:
-    """Get a customer address."""
-    return accounts[1]
-
-
-@pytest.fixture
-def customer_2(accounts) -> str:
-    """Get another customer address."""
-    return accounts[2]
-
-@pytest.fixture
-def beneficiary(accounts) -> str:
-    """The team control address."""
-    return accounts[3]
-
-
-@pytest.fixture
-def multisig(accounts) -> str:
-    """The team multisig address."""
-    return accounts[4]
-
-
-@pytest.fixture
-def start():
-    """Match in TestableCrowdsale."""
-    return 1488294000
-
-
-@pytest.fixture
-def end():
-    """Match in TestableCrowdsale."""
-    return 1490112000
-
-
-@pytest.fixture
-def open_crowdsale(crowdsale, token, start):
-    """We live in time when crowdsale is open"""
-    crowdsale.transact().setCurrent(start + 1)
-    token.transact().setCurrent(start + 1)
-    return crowdsale
-
-
-@pytest.fixture
-def early_crowdsale(crowdsale, token, start):
-    """We live in time when crowdsale is not yet open"""
-    crowdsale.transact().setCurrent(start-1)
-    token.transact().setCurrent(start-1)
-    return crowdsale
-
-
-@pytest.fixture
-def finished_crowdsale(crowdsale, token, end):
-    """We live in time when crowdsale is done."""
-    crowdsale.transact().setCurrent(end+1)
-    token.transact().setCurrent(end+1)
-    return crowdsale
-
-
 def test_initialized(crowdsale: Contract, token: Contract, beneficiary: str):
     assert token.call().balanceOf(beneficiary) == 500000000
     assert token.call().totalSupply() == 500000000
@@ -137,12 +54,59 @@ def test_buy_tokens(open_crowdsale: Contract, token: Contract, customer: str, be
         "gas": 250000,
     })
 
+    # We get ERC-20 event
     events = token.pastEvents("Transfer").get()
     assert len(events) == 1
     e = events[0]
     assert e["args"]["to"] == customer
     assert e["args"]["from"] == beneficiary
     assert e["args"]["value"] == 24000
+
+    # We get crowdsale event
+    events = open_crowdsale.pastEvents("FundTransfer").get()
+    assert len(events) == 1
+    e = events[0]
+    assert e["args"]["backer"] == customer
+    assert e["args"]["amount"] == to_wei(20, "ether")
+    assert e["args"]["amountRaised"] == to_wei(20, "ether")
+
+
+def test_buy_more_tokens(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
+    """User wants to buy more tokens to the same address."""
+
+    initial_balance = token.call().balanceOf(beneficiary)
+
+    web3.eth.sendTransaction({
+        "from": customer,
+        "to": open_crowdsale.address,
+        "value": to_wei(20, "ether"),
+        "gas": 250000,
+    })
+
+    web3.eth.sendTransaction({
+        "from": customer,
+        "to": open_crowdsale.address,
+        "value": to_wei(20, "ether"),
+        "gas": 250000,
+    })
+
+    events = token.pastEvents("Transfer").get()
+    assert len(events) == 2
+    for e in events:
+        assert e["args"]["to"] == customer
+        assert e["args"]["from"] == beneficiary
+        assert e["args"]["value"] == 24000
+
+    assert token.call().balanceOf(beneficiary) == initial_balance - 24000 * 2
+    assert token.call().balanceOf(customer) == 24000 * 2
+
+    # We get crowdsale event
+    events = open_crowdsale.pastEvents("FundTransfer").get()
+    assert len(events) == 2
+    e = events[-1]
+    assert e["args"]["backer"] == customer
+    assert e["args"]["amount"] == to_wei(20, "ether")
+    assert e["args"]["amountRaised"] == to_wei(20, "ether") * 2
 
 
 def test_buy_rounded_to_zero(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
@@ -214,6 +178,7 @@ def test_call_check_goal_reached_after_close(finished_crowdsale: Contract, token
     finished_crowdsale.transact().checkGoalReached()
     assert finished_crowdsale.call().crowdsaleClosed() == True
 
+
 def test_check_goal_not_reached(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3, end: int):
     """We don't reach our goal."""
 
@@ -261,7 +226,32 @@ def test_check_burn(open_crowdsale: Contract, token: Contract, customer: str, be
     finished_crowdsale.transact().checkGoalReached()
     assert finished_crowdsale.call().fundingGoalReached()
 
+    # We get crowdsale over event
+    events = finished_crowdsale.pastEvents("GoalReached").get()
+    assert len(events) == 1
+
     # We burned succesfully
     assert finished_token.call().burned()
     assert token.call().totalSupply() < supply_before_burn
     assert token.call().balanceOf(beneficiary) < owner_before_burn
+
+
+def test_no_transfer_before_close(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, empty_address: str, web3: Web3, end: int):
+    """Buyer cannot transfer tokens before ICO is over."""
+
+    web3.eth.sendTransaction({
+        "from": customer,
+        "to": open_crowdsale.address,
+        "value": to_wei(20, "ether"),
+        "gas": 250000,
+    })
+
+    amount = 4000
+    with pytest.raises(TransactionFailed):
+        token.transact({"from": customer}).transfer(empty_address, amount)
+
+    token.transact().setCurrent(end+1)
+    token.transact({"from": customer}).transfer(empty_address, amount)
+
+    assert token.call().balanceOf(empty_address) == amount
+
