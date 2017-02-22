@@ -35,9 +35,9 @@ contract Crowdsale is TestableNow {
 	/* the balances (in ETH) of all investors */
 	mapping(address => uint256) public balanceOf;
 	/* indicated if the funding goal has been reached. */
-	bool fundingGoalReached = false;
+	bool public fundingGoalReached = false;
 	/* indicates if the crowdsale has been closed already */
-	bool crowdsaleClosed = false;
+	bool public crowdsaleClosed = false;
 	/* the multisignature wallet on which the funds will be stored */
 	address msWallet = 0;
 	/* notifying transfers and the success of the crowdsale*/

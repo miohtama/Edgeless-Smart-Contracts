@@ -18,9 +18,12 @@ contract EdgelessToken is TestableNow {
     uint256 public totalSupply;
     uint256 public currentInterval = 1;
     uint256 public intervalLength = 30 days;
-    uint256 public startTime = 1490112000;//from this time on tokens may be transfered (after ICO)
+
+    // transfer start time
+    //from this time on tokens may be transfered (after ICO)
+    uint256 public startTime = 1490112000;
     address public owner;
-    bool burned;//tells if tokens have been burned already
+    bool public burned;//tells if tokens have been burned already
 
     /* This creates an array with all balances */
     mapping (address => uint256) public balanceOf;
