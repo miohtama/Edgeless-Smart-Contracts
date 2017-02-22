@@ -9,9 +9,9 @@ from web3.utils.currency import to_wei
 
 
 @pytest.fixture
-def crowdsale(chain, beneficiary) -> Contract:
+def crowdsale(chain, beneficiary, multisig) -> Contract:
     """Create crowdsale contract."""
-    args = [beneficiary]
+    args = [beneficiary, multisig]
     contract = chain.get_contract('Crowdsale', deploy_args=args)
     return contract
 
@@ -45,8 +45,14 @@ def customer_2(accounts) -> str:
 
 @pytest.fixture
 def beneficiary(accounts) -> str:
-    """The team multisig address."""
+    """The team control address."""
     return accounts[3]
+
+
+@pytest.fixture
+def multisig(accounts) -> str:
+    """The team multisig address."""
+    return accounts[4]
 
 
 @pytest.fixture

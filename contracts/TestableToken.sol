@@ -7,7 +7,9 @@
 pragma solidity ^0.4.6;
 contract tokenRecipient { function receiveApproval(address _from, uint256 _value, address _token, bytes _extraData); }
 
-contract EdgelessToken {
+import "./TestableNow.sol";
+
+contract EdgelessToken is TestableNow {
     /* Public variables of the token */
     string public standard = 'ERC20';
     string public name = 'Edgeless';
@@ -31,9 +33,6 @@ contract EdgelessToken {
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Lock(address indexed owner, uint256 interval, uint256 value);
-
-    /* Time override */
-	uint _current;
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
     function EdgelessToken(address _owner) {
