@@ -71,9 +71,14 @@ contract Crowdsale is SafeMath, TestableNow {
 	event FundTransfer(address backer, uint amount, bool isContribution, uint amountRaised);
 
     /*  initialization, set the token address */
-    function Crowdsale(address _beneficiary, address _msWallet) {
+    function Crowdsale(address _beneficiary, address _msWallet, uint _start) {
         beneficiary = _beneficiary;
         msWallet = _msWallet;
+
+        // Allow to override the start time to test the contract in testnet
+        if(_start > 0) {
+            start = _start;
+        }
     }
 
     /* Build circular references between contracts. Only in test version. */

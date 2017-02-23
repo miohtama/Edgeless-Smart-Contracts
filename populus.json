@@ -13,7 +13,16 @@
         "class": "populus.chain.TestnetChain"
       },
       "web3": {
-        "$ref": "web3.GethIPC"
+        "eth": {
+          "default_account": "0xbe81b3c5d7be405cc6126282c45ce035f83b347c"
+        },
+        "provider": {
+          "class": "web3.providers.rpc.RPCProvider",
+          "settings": {
+            "host": "127.0.0.1",
+            "port": 8546
+          }
+        }
       }
     },
     "temp": {
@@ -44,7 +53,12 @@
   "compilation": {
     "contracts_dir": "./contracts",
     "settings": {
-      "optimize": true
+      "optimize": true,
+      "output_values": [
+        "bin",
+        "bin-runtime",
+        "abi"
+      ]
     }
   },
   "version": "1",

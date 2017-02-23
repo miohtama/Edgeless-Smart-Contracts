@@ -106,6 +106,9 @@ Then:
 Usage
 =====
 
+Running tests
+^^^^^^^^^^^^^
+
 Running tests::
 
     py.test tests
@@ -113,3 +116,15 @@ Running tests::
 Run a specific test::
 
     py.test tests -k test_get_price_tiers
+
+Deploying on testnet
+^^^^^^^^^^^^^^^^^^^^
+
+Compile contracts::
+
+    populus compile
+
+Deploy::
+
+    python testnet_deploy.py
+

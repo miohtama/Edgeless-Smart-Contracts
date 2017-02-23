@@ -8,7 +8,7 @@ from web3.contract import Contract
 @pytest.fixture
 def crowdsale(chain, beneficiary, multisig) -> Contract:
     """Create crowdsale contract."""
-    args = [beneficiary, multisig]
+    args = [beneficiary, multisig, 0]
     contract = chain.get_contract('Crowdsale', deploy_args=args)
     return contract
 
