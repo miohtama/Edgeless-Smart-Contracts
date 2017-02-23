@@ -73,8 +73,8 @@ def main():
         check_succesful_tx(web3, txhash)
 
         # Do some contract reads to see everything looks ok
-        print("Token total supply is ", token.call().totalSupply())
-        print("Crowdsale max goal is ", crowdsale.call().maxGoal())
+        print("Token total supply is", token.call().totalSupply())
+        print("Crowdsale max goal is", crowdsale.call().maxGoal())
 
         print("All done! Enjoy your decentralized future.")
 

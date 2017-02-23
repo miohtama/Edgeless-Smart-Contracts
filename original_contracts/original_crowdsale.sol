@@ -69,7 +69,6 @@ contract Crowdsale is SafeMath {
 	event FundTransfer(address backer, uint amount, bool isContribution, uint amountRaised);
 
 
-
     /*  initialization, set the token address */
     function Crowdsale( ) {
         tokenReward = token(0x5bdf79f1e7431edb75537d23d3b404ef86f44316);
