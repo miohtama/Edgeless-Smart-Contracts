@@ -249,3 +249,45 @@ def test_no_transfer_before_close(open_crowdsale: Contract, token: Contract, cus
 
     assert token.call().balanceOf(empty_address) == amount
 
+
+
+def test_refund(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, multisig: str, empty_address: str, web3: Web3, end: int):
+    """We refund failed ICO."""
+
+    customer_original_balance = web3.eth.getBalance(customer)
+    multisig_original_balance = web3.eth.getBalance(multisig)
+
+    web3.eth.sendTransaction({
+        "from": customer,
+        "to": open_crowdsale.address,
+        "value": to_wei(20, "ether"),
+        "gas": 250000,
+    })
+
+    assert open_crowdsale.call().balanceOf(customer) == to_wei(20, "ether")
+    assert web3.eth.getBalance(multisig) > multisig_original_balance + to_wei(20, "ether") - 500000
+
+    # ICO ends
+    open_crowdsale.transact().setCurrent(end + 1)
+    finished_crowdsale = open_crowdsale
+
+    # We did not finish
+    finished_crowdsale.transact().checkGoalReached()
+    assert not finished_crowdsale.call().fundingGoalReached()
+
+    assert web3.eth.getBalance(customer) < customer_original_balance
+
+    # Load balance back to the crowdsale
+    web3.eth.sendTransaction({
+        "from": multisig,
+        "to": finished_crowdsale.address,
+        "value": web3.eth.getBalance(multisig) - 250000,
+        "gas": 250000,
+    })
+
+    # Customer 1 demands refund
+    finished_crowdsale.transact({"from": customer}).safeWithdrawal()
+    assert open_crowdsale.call().balanceOf(customer) == 0
+    assert web3.eth.getBalance(customer) > customer_original_balance - 500000
+
+
