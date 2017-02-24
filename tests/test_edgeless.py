@@ -1,4 +1,4 @@
-"""Edgeless ICO test suite."""
+"""Crowdsale test suite."""
 import datetime
 
 import pytest
@@ -9,6 +9,7 @@ from web3.utils.currency import to_wei
 
 
 def test_initialized(crowdsale: Contract, token: Contract, beneficiary: str):
+    """Crowdsale is properly initialized with given parameters."""
     assert token.call().balanceOf(beneficiary) == 500000000
     assert token.call().totalSupply() == 500000000
     assert token.call().owner() == beneficiary
@@ -17,7 +18,7 @@ def test_initialized(crowdsale: Contract, token: Contract, beneficiary: str):
 
 
 def test_get_price_tiers(crowdsale: Contract, token: Contract, customer: str, web3: Web3):
-    """Test out different price tiers"""
+    """Price tiers match given dates."""
 
     deadlines = [1488297600, 1488902400, 1489507200, 1490112000]
     prices = [833333333333333, 909090909090909, 952380952380952, 1000000000000000]
@@ -32,7 +33,7 @@ def test_get_price_tiers(crowdsale: Contract, token: Contract, customer: str, we
 
 
 def test_dates(crowdsale: Contract, token: Contract, customer: str, web3: Web3):
-    """See dates match - read output by eye."""
+    """Dates match given in the project material."""
 
     deadlines = [1488297600, 1488902400, 1489507200, 1490112000]
 
@@ -45,7 +46,7 @@ def test_dates(crowdsale: Contract, token: Contract, customer: str, web3: Web3):
 
 
 def test_buy_tokens(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """Sending in ETH succesful buys tokens."""
+    """Sending ETH successfully buys tokens."""
 
     web3.eth.sendTransaction({
         "from": customer,
@@ -72,7 +73,7 @@ def test_buy_tokens(open_crowdsale: Contract, token: Contract, customer: str, be
 
 
 def test_buy_more_tokens(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """User wants to buy more tokens to the same address."""
+    """User can buy more tokens."""
 
     initial_balance = token.call().balanceOf(beneficiary)
 
@@ -110,7 +111,7 @@ def test_buy_more_tokens(open_crowdsale: Contract, token: Contract, customer: st
 
 
 def test_buy_rounded_to_zero(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """We buy very small amount that is rounded to zero."""
+    """Too small buy in gives an error."""
 
     with pytest.raises(TransactionFailed):
         web3.eth.sendTransaction({
@@ -122,7 +123,7 @@ def test_buy_rounded_to_zero(open_crowdsale: Contract, token: Contract, customer
 
 
 def test_buy_too_many_tokens(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """Try to outbuy the system."""
+    """One cannot out buy the maximum token allocation."""
 
     buy_everything_amount = open_crowdsale.call().getPrice() * open_crowdsale.call().maxGoal()
 
@@ -151,7 +152,7 @@ def test_buy_too_many_tokens(open_crowdsale: Contract, token: Contract, customer
 
 
 def test_buy_tokens_too_early(early_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """Somebody tries to shortcut in the queue."""
+    """One cannot participate to the crowdsale too early."""
     with pytest.raises(TransactionFailed):
         web3.eth.sendTransaction({
             "from": customer,
@@ -162,19 +163,19 @@ def test_buy_tokens_too_early(early_crowdsale: Contract, token: Contract, custom
 
 
 def test_call_check_goal_reached_too_early(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """Make sure afterDeadline works."""
+    """Checking goal reached does nothing unless ICO is over."""
     open_crowdsale.transact().checkGoalReached()
     assert open_crowdsale.call().crowdsaleClosed() == False
 
 
 def test_call_check_goal_reached_after_close(finished_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3):
-    """Make sure afterDeadline works."""
+    """Checking goal reached closes crowdsale if we are the past end deadline."""
     finished_crowdsale.transact().checkGoalReached()
     assert finished_crowdsale.call().crowdsaleClosed() == True
 
 
 def test_check_goal_not_reached(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3, end: int):
-    """We don't reach our goal."""
+    """Crowdsale may not reach its minimum funding goal."""
 
     # Buy some tokens
     web3.eth.sendTransaction({
@@ -192,7 +193,7 @@ def test_check_goal_not_reached(open_crowdsale: Contract, token: Contract, custo
 
 
 def test_check_burn(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, web3: Web3, end: int):
-    """Make sure we burn properly."""
+    """Extra tokens are burnt as described as the end of the ICO."""
 
     minimum_goal_value = open_crowdsale.call().fundingGoal() * open_crowdsale.call().getPrice()
 
@@ -252,7 +253,7 @@ def test_no_transfer_before_close(open_crowdsale: Contract, token: Contract, cus
 
 
 def test_refund(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, multisig: str, empty_address: str, web3: Web3, end: int):
-    """We refund failed ICO."""
+    """Refunding failed ICO gives ETH back correctly."""
 
     customer_original_balance = web3.eth.getBalance(customer)
     multisig_original_balance = web3.eth.getBalance(multisig)

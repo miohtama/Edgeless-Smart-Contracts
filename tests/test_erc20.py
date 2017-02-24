@@ -1,15 +1,14 @@
+"""ERC-20 compatibility test suite"""
+
 import pytest
 from ethereum.tester import TransactionFailed
 from web3.contract import Contract
 
 
 def test_erc20_interface(erc20_token: Contract, token_owner: str, empty_address: str):
-    """See we satisfy ERC-20 interface.
+    """Edgeless token satisfies ERC-20 interface."""
 
-    Test against a deployed contract where one account holder has tokens.
-
-    https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/ERC20.sol
-    """
+    # https://github.com/OpenZeppelin/zeppelin-solidity/blob/master/contracts/token/ERC20.sol
 
     token = erc20_token
     assert token.call().totalSupply() > 0
@@ -27,7 +26,7 @@ def test_erc20_interface(erc20_token: Contract, token_owner: str, empty_address:
 
 
 def test_erc20_transfer(erc20_token: Contract, token_owner: str, empty_address: str):
-    """We can do ERC-20 transfer."""
+    """ERC-20 compatible transfer() is available."""
 
     token = erc20_token
     amount = 5000
@@ -47,7 +46,7 @@ def test_erc20_transfer(erc20_token: Contract, token_owner: str, empty_address: 
 
 
 def test_erc20_not_enough_balance(erc20_token: Contract, token_owner: str, empty_address: str):
-    """We cannot transfer more than we have."""
+    """ERC-20 transfer fails if user exceeds his/her balance."""
 
     token = erc20_token
     initial_balance = token.call().balanceOf(token_owner)
@@ -58,7 +57,7 @@ def test_erc20_not_enough_balance(erc20_token: Contract, token_owner: str, empty
 
 
 def test_erc20_transfer_with_allowance(erc20_token: Contract, token_owner: str, empty_address: str, allowed_party):
-    """Transfer tokens with allowance approval."""
+    """Tokens can be transferred with ECR-20 allowance approval."""
 
     token = erc20_token
     amount = 5000
@@ -88,7 +87,7 @@ def test_erc20_transfer_with_allowance(erc20_token: Contract, token_owner: str, 
 
 
 def test_erc20_transfer_with_allowance_too_much(erc20_token: Contract, token_owner: str, empty_address: str, allowed_party):
-    """We are cannot transfer more than our allowance."""
+    """One cannot transfers more than approved allowance."""
 
     token = erc20_token
     amount = 5000
