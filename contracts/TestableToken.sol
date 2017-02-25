@@ -36,6 +36,7 @@ contract SafeMath {
   }
 }
 
+
 contract EdgelessToken is SafeMath, TestableNow {
     /* Public variables of the token */
     string public standard = 'ERC20';
@@ -43,10 +44,7 @@ contract EdgelessToken is SafeMath, TestableNow {
     string public symbol = 'EDG';
     uint8 public decimals = 0;
     uint256 public totalSupply;
-    uint256 public currentInterval = 1;
-    uint256 public intervalLength = 30 days;
     address public owner;
-
     /* from this time on tokens may be transfered (after ICO)*/
     uint256 public startTime = 1490112000;
     /* tells if tokens have been burned already */
@@ -56,13 +54,11 @@ contract EdgelessToken is SafeMath, TestableNow {
     mapping (address => uint256) public balanceOf;
     mapping (address => mapping (address => uint256)) public allowance;
 
-    /* Defines how many tokens of which addresses are locked in which interval*/
-    mapping(address => mapping(uint256=>uint256)) public locked;
 
     /* This generates a public event on the blockchain that will notify clients */
     event Transfer(address indexed from, address indexed to, uint256 value);
     event Approval(address indexed owner, address indexed spender, uint256 value);
-    event Lock(address indexed owner, uint256 interval, uint256 value);
+	event Burned(uint amount);
 
     /* Initializes contract with initial supply tokens to the creator of the contract */
     function EdgelessToken(address _owner) {
@@ -70,14 +66,13 @@ contract EdgelessToken is SafeMath, TestableNow {
         owner = _owner;
         balanceOf[owner] = 500000000;              // Give the owner all initial tokens
         totalSupply = 500000000;                   // Update total supply
-        for(uint8 i = 1; i < 13; i++)		   // lock owner's final share of tokens for the first 12 months
-        	locked[owner][i] = 50000000;
     }
+
 
     /* Send some of your tokens to a given address */
     function transfer(address _to, uint256 _value) returns (bool success){
         if (current() < startTime) throw; //check if the crowdsale is already over
-        if (locked[msg.sender][getInterval()] >= balanceOf[msg.sender] || balanceOf[msg.sender]-locked[msg.sender][getInterval()] < _value) throw;   // Check if the sender has enough
+        if(msg.sender == owner && current() < startTime + 1 years && safeSub(balanceOf[msg.sender],_value) < 50000000) throw; //prevent the owner of spending his share of tokens within the first year
         balanceOf[msg.sender] = safeSub(balanceOf[msg.sender],_value);                     // Subtract from the sender
         balanceOf[_to] = safeAdd(balanceOf[_to],_value);                            // Add the same to the recipient
         Transfer(msg.sender, _to, _value);                   // Notify anyone listening that this transfer took place
@@ -96,7 +91,7 @@ contract EdgelessToken is SafeMath, TestableNow {
     *  This is only allowed if the token holder approved. */
     function transferFrom(address _from, address _to, uint256 _value) returns (bool success) {
         if (current() < startTime && _from!=owner) throw; //check if the crowdsale is already over
-        if (locked[_from][getInterval()] >= balanceOf[_from] || balanceOf[_from]-locked[_from][getInterval()] < _value) throw;     // Check if the sender has enough
+        if(_from == owner && current() < startTime + 1 years && safeSub(balanceOf[_from],_value) < 50000000) throw; //prevent the owner of spending his share of tokens within the first year
         var _allowance = allowance[_from][msg.sender];
         balanceOf[_from] = safeSub(balanceOf[_from],_value); // Subtract from the sender
         balanceOf[_to] = safeAdd(balanceOf[_to],_value);     // Add the same to the recipient
@@ -105,26 +100,6 @@ contract EdgelessToken is SafeMath, TestableNow {
         return true;
     }
 
-    /* Lock a number of tokens. This means, you will not be able to transfer these tokens until
-    *  the start of the next interval. */
-    function lock(address holder, uint256 _value) returns (bool success) {
-        if(holder==msg.sender||holder==tx.origin){
-			uint ci = getInterval();
-			uint holderLock = locked[holder][ci];
-            locked[holder][ci] = safeAdd(holderLock,_value);
-            Lock(holder, ci, _value);
-            return true;
-        }
-    }
-
-    /* Increase the interval, if sufficient time has passed.
-    *  When a new interval starts, all tokens are unlocked. */
-    function getInterval() returns (uint256 interval){
-        if (current() > safeAdd(safeMul(currentInterval, intervalLength), startTime)) {
-            currentInterval = (current() - startTime) / intervalLength + 1;
-        }
-        return currentInterval;
-    }
 
     /* to be called when ICO is closed, burns the remaining tokens but the owners share (50 000 000) and the ones reserved
     *  for the bounty program (10 000 000).
@@ -137,6 +112,7 @@ contract EdgelessToken is SafeMath, TestableNow {
     		balanceOf[owner] = 60000000;
     		totalSupply = safeSub(totalSupply, difference);
     		burned = true;
+    		Burned(difference);
     	}
     }
 

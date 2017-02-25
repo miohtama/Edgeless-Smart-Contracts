@@ -40,7 +40,7 @@ contract SafeMath {
 
 contract Crowdsale is SafeMath {
     /* tokens will be transfered from this address */
-	address public beneficiary = 0;
+	address public beneficiary = 0x003230bbe64eccd66f62913679c8966cf9f41166;
 	/* if the funding goal is not reached, investors may withdraw their funds */
 	uint public fundingGoal = 50000000;
 	/* the maximum amount of tokens to be sold */
@@ -69,9 +69,10 @@ contract Crowdsale is SafeMath {
 	event FundTransfer(address backer, uint amount, bool isContribution, uint amountRaised);
 
 
+
     /*  initialization, set the token address */
     function Crowdsale( ) {
-        tokenReward = token(0x5bdf79f1e7431edb75537d23d3b404ef86f44316);
+        tokenReward = token(0x08711d3b02c8758f2fb3ab4e80228418a7f8e39c);
     }
 
     /* invest by sending ether to the contract. */

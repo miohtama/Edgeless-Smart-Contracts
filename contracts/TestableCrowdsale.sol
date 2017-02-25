@@ -70,6 +70,7 @@ contract Crowdsale is SafeMath, TestableNow {
 	event GoalReached(address beneficiary, uint amountRaised);
 	event FundTransfer(address backer, uint amount, bool isContribution, uint amountRaised);
 
+
     /*  initialization, set the token address */
     function Crowdsale(address _beneficiary, address _msWallet, uint _start) {
         beneficiary = _beneficiary;
@@ -87,7 +88,6 @@ contract Crowdsale is SafeMath, TestableNow {
         if(address(tokenReward) != 0) throw; // No double set
         tokenReward = token(_token);
     }
-
     /* invest by sending ether to the contract. */
     function () payable{
 		if(msg.sender != msWallet) //do not trigger investment if the multisig wallet is returning the funds
