@@ -230,6 +230,12 @@ def test_check_burn(open_crowdsale: Contract, token: Contract, customer: str, be
     assert token.call().totalSupply() < supply_before_burn
     assert token.call().balanceOf(beneficiary) < owner_before_burn
 
+    # Burned event gives us the diff
+    events = finished_token.pastEvents("Burned").get()
+    assert len(events) == 1
+    e = events[0]
+    assert e["args"]["amount"] == 390000000
+
 
 def test_no_transfer_before_close(open_crowdsale: Contract, token: Contract, customer: str, beneficiary: str, empty_address: str, web3: Web3, end: int):
     """Buyer cannot transfer tokens before ICO is over."""
