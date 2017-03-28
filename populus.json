@@ -1,11 +1,36 @@
 {
   "chains": {
+    "local": {
+      "chain": {
+        "class": "populus.chain.LocalGethChain"
+      },
+      "web3": {
+        "eth": {
+          "default_account": "0xb9e19fc3c470a594fbd7401bae933aeec6c0459d"
+        },
+        "provider": {
+          "class": "web3.providers.rpc.HTTPProvider",
+          "settings": {
+            "host": "127.0.0.1",
+            "port": 8545
+          }
+        }
+      }
+    },
     "mainnet": {
       "chain": {
         "class": "populus.chain.MainnetChain"
       },
       "web3": {
-        "$ref": "web3.GethIPC"
+        "provider": {
+          "class": "web3.providers.rpc.HTTPProvider",
+          "settings": {
+            "endpoint_uri": "http://127.0.0.1:8545",
+            "request_kwargs": {
+                "timeout": 180
+            }
+          }
+        }
       }
     },
     "ropsten": {

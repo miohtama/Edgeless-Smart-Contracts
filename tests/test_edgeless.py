@@ -35,12 +35,19 @@ def test_get_price_tiers(crowdsale: Contract, token: Contract, customer: str, we
 def test_dates(crowdsale: Contract, token: Contract, customer: str, web3: Web3):
     """Dates match given in the project material."""
 
-    deadlines = [1488297600, 1488902400, 1489507200, 1490112000]
+    deadlines = [
+        crowdsale.call().deadlines(0),
+        crowdsale.call().deadlines(1),
+        crowdsale.call().deadlines(2),
+        crowdsale.call().deadlines(3)
+    ]
+
+    print("Start is {}".format(datetime.datetime.fromtimestamp(crowdsale.call().start(), tz=datetime.timezone.utc)))
 
     for idx, deadline in enumerate(deadlines):
-        print("Deadline {} is {}".format(idx, datetime.datetime.fromtimestamp(deadline)))
+        print("Deadline {} is {}".format(idx, datetime.datetime.fromtimestamp(deadline, tz=datetime.timezone.utc)))
 
-    print("Token is transferable {}".format(datetime.datetime.fromtimestamp(token.call().startTime())))
+    print("Token is transferable {}".format(datetime.datetime.fromtimestamp(token.call().startTime(), tz=datetime.timezone.utc)))
 
     assert token.call().startTime() == deadlines[-1]
 
